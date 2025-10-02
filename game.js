@@ -48,17 +48,27 @@ window.addEventListener('DOMContentLoaded', function(){
 
         // Game/Render loop
         scene.onBeforeRenderObservable.add(() => {
+            var forward = camera.getDirection(BABYLON.Axis.Z);
+            var right = camera.getDirection(BABYLON.Axis.X);
+            var moveDirection = new BABYLON.Vector3(0, 0, 0);
+
             if (inputMap["w"] || inputMap["ArrowUp"]) {
-                sphere.position.z += 0.1;
+                moveDirection.addInPlace(forward);
             }
             if (inputMap["s"] || inputMap["ArrowDown"]) {
-                sphere.position.z -= 0.1;
+                moveDirection.subtractInPlace(forward);
             }
             if (inputMap["a"] || inputMap["ArrowLeft"]) {
-                sphere.position.x -= 0.1;
+                moveDirection.subtractInPlace(right);
             }
             if (inputMap["d"] || inputMap["ArrowRight"]) {
-                sphere.position.x += 0.1;
+                moveDirection.addInPlace(right);
+            }
+
+            if (moveDirection.length() > 0.01) {
+                moveDirection.y = 0; // Project to XZ plane
+                moveDirection.normalize();
+                sphere.position.addInPlace(moveDirection.scale(0.1));
             }
         });
 
