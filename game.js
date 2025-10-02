@@ -28,6 +28,7 @@ window.addEventListener('DOMContentLoaded', function(){
         camera.lockedTarget = sphere;
 
         var originalGroundPositions;
+        var positions;
         // create a built-in "ground" shape; its constructor takes 6 params : name, width, height, subdivision, scene, updatable
         var ground = BABYLON.Mesh.CreateGroundFromHeightMap("snowyGround", "assets/heightMap.png", 100, 100, 100, 0, 10, scene, true, function() {
             var groundMaterial = new BABYLON.StandardMaterial("groundMaterial", scene);
@@ -37,6 +38,7 @@ window.addEventListener('DOMContentLoaded', function(){
             ground.material = groundMaterial;
             ground.receiveShadows = true;
             originalGroundPositions = ground.getVerticesData(BABYLON.VertexBuffer.PositionKind);
+            positions = ground.getVerticesData(BABYLON.VertexBuffer.PositionKind);
         });
 
         // Shadows
@@ -218,8 +220,7 @@ window.addEventListener('DOMContentLoaded', function(){
                 }
             }
 
-            if (ground && ground.isReady() && originalGroundPositions) {
-                var positions = ground.getVerticesData(BABYLON.VertexBuffer.PositionKind);
+            if (ground && ground.isReady() && positions && originalGroundPositions) {
                 var normals = ground.getVerticesData(BABYLON.VertexBuffer.NormalKind);
                 var indices = ground.getIndices();
                 var sphereRadius = 1;
@@ -236,24 +237,37 @@ window.addEventListener('DOMContentLoaded', function(){
                 for (var z = Math.max(0, gridZ - radiusInGrid); z < Math.min(vertexCount, gridZ + radiusInGrid); z++) {
                     for (var x = Math.max(0, gridX - radiusInGrid); x < Math.min(vertexCount, gridX + radiusInGrid); x++) {
                         var vertexIndex = (z * vertexCount + x) * 3;
-                        var vX = positions[vertexIndex];
-                        var vY = positions[vertexIndex + 1];
-                        var vZ = positions[vertexIndex + 2];
-                        var dx = vX - sphereX;
-                        var dz = vZ - sphereZ;
+                        var px = positions[vertexIndex];
+                        var py = positions[vertexIndex + 1];
+                        var pz = positions[vertexIndex + 2];
+
+                        var dx = px - sphereX;
+                        var dz = pz - sphereZ;
                         var distance = Math.sqrt(dx * dx + dz * dz);
 
+                        // Carve the trench
                         if (distance < sphereRadius) {
                             var sphereYatPoint = sphereY - Math.sqrt(sphereRadius * sphereRadius - distance * distance);
-                            positions[vertexIndex + 1] = Math.min(vY, sphereYatPoint);
+                            positions[vertexIndex + 1] = Math.min(py, sphereYatPoint);
                         }
 
-                        var pileupRadius = sphereRadius + 2.0; // Wider pile
+                        // Pile up the snow
+                        var pileupRadius = sphereRadius + 1.5;
+                        var pileupHeight = 0.3;
+                        var displacementAmount = 0.1;
+
                         if (distance > sphereRadius && distance < pileupRadius) {
-                            var originalY = originalGroundPositions[vertexIndex + 1];
+                            var normalX = dx / distance;
+                            var normalZ = dz / distance;
                             var pileupFactor = (pileupRadius - distance) / (pileupRadius - sphereRadius);
-                            var pileupAmount = 0.2 * pileupFactor; // Lower pile
-                            positions[vertexIndex + 1] = Math.max(vY, originalY + pileupAmount);
+
+                            // Add displacement to the current position
+                            positions[vertexIndex] += normalX * pileupFactor * displacementAmount;
+                            positions[vertexIndex + 2] += normalZ * pileupFactor * displacementAmount;
+
+                            // Pile up from the original height
+                            var originalY = originalGroundPositions[vertexIndex + 1];
+                            positions[vertexIndex + 1] = Math.max(py, originalY + pileupFactor * pileupHeight);
                         }
                     }
                 }
