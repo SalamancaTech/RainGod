@@ -24,15 +24,24 @@ window.addEventListener('DOMContentLoaded', function(){
         // create a built-in "sphere" shape; its constructor takes 6 params: name, segment, diameter, scene, updatable, sideOrientation
         var sphere = BABYLON.Mesh.CreateSphere('sphere1', 16, 2, scene);
 
-        // move the sphere upward 1/2 of its height
-        sphere.position.y = 1;
-
         // Lock the camera's target to the sphere
         camera.lockedTarget = sphere;
 
+        var originalGroundPositions;
         // create a built-in "ground" shape; its constructor takes 6 params : name, width, height, subdivision, scene, updatable
-        var ground = BABYLON.Mesh.CreateGround('ground1', 6, 6, 2, scene);
-        ground.receiveShadows = true;
+        var ground = BABYLON.Mesh.CreateGroundFromHeightMap("snowyGround", "assets/heightMap.png", 100, 100, 100, 0, 10, scene, true, function() {
+            var groundMaterial = new BABYLON.StandardMaterial("groundMaterial", scene);
+            groundMaterial.diffuseTexture = new BABYLON.Texture("assets/snow.jpg", scene);
+            groundMaterial.diffuseTexture.uScale = 5;
+            groundMaterial.diffuseTexture.vScale = 5;
+            ground.material = groundMaterial;
+            ground.receiveShadows = true;
+            originalGroundPositions = ground.getVerticesData(BABYLON.VertexBuffer.PositionKind);
+
+            // Position the sphere to be 2/3 submerged in the snow
+            var groundHeight = ground.getHeightAtCoordinates(sphere.position.x, sphere.position.z);
+            sphere.position.y = groundHeight - (1/3);
+        });
 
         // Shadows
         var shadowGenerator = new BABYLON.ShadowGenerator(1024, light);
@@ -192,7 +201,52 @@ window.addEventListener('DOMContentLoaded', function(){
             if (moveDirection.length() > 0.01) {
                 moveDirection.y = 0; // Project to XZ plane
                 moveDirection.normalize();
-                sphere.position.addInPlace(moveDirection.scale(0.1));
+                var speed = 0.05; // Player moves slower in the snow
+                sphere.position.addInPlace(moveDirection.scale(speed));
+            }
+
+            if (ground && ground.isReady() && originalGroundPositions) {
+                var positions = ground.getVerticesData(BABYLON.VertexBuffer.PositionKind);
+                var normals = ground.getVerticesData(BABYLON.VertexBuffer.NormalKind);
+                var indices = ground.getIndices();
+                var sphereRadius = 1;
+                var sphereX = sphere.position.x;
+                var sphereZ = sphere.position.z;
+                var sphereY = sphere.position.y;
+                var groundWidth = 100;
+                var subdivisions = 100;
+                var vertexCount = subdivisions + 1;
+                var gridX = Math.floor((sphereX + groundWidth / 2));
+                var gridZ = Math.floor((sphereZ + groundWidth / 2));
+                var radiusInGrid = Math.ceil(sphereRadius) + 2;
+
+                for (var z = Math.max(0, gridZ - radiusInGrid); z < Math.min(vertexCount, gridZ + radiusInGrid); z++) {
+                    for (var x = Math.max(0, gridX - radiusInGrid); x < Math.min(vertexCount, gridX + radiusInGrid); x++) {
+                        var vertexIndex = (z * vertexCount + x) * 3;
+                        var vX = positions[vertexIndex];
+                        var vY = positions[vertexIndex + 1];
+                        var vZ = positions[vertexIndex + 2];
+                        var dx = vX - sphereX;
+                        var dz = vZ - sphereZ;
+                        var distance = Math.sqrt(dx * dx + dz * dz);
+
+                        if (distance < sphereRadius) {
+                            var sphereYatPoint = sphereY - Math.sqrt(sphereRadius * sphereRadius - distance * distance);
+                            positions[vertexIndex + 1] = Math.min(vY, sphereYatPoint);
+                        }
+
+                        var pileupRadius = sphereRadius + 1.0;
+                        if (distance > sphereRadius && distance < pileupRadius) {
+                            var originalY = originalGroundPositions[vertexIndex + 1];
+                            var pileupFactor = (pileupRadius - distance) / (pileupRadius - sphereRadius);
+                            var pileupAmount = 0.5 * pileupFactor;
+                            positions[vertexIndex + 1] = Math.max(vY, originalY + pileupAmount);
+                        }
+                    }
+                }
+                ground.updateVerticesData(BABYLON.VertexBuffer.PositionKind, positions);
+                BABYLON.VertexData.ComputeNormals(positions, indices, normals);
+                ground.updateVerticesData(BABYLON.VertexBuffer.NormalKind, normals);
             }
         });
 
