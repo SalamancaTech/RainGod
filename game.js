@@ -20,8 +20,9 @@ window.addEventListener('DOMContentLoaded', function(){
         // attach the camera to the canvas
         camera.attachControl(canvas, false);
 
-        // create a basic light, aiming 0,1,0 - to the sky
-        var light = new BABYLON.HemisphericLight('light1', new BABYLON.Vector3(0,1,0), scene);
+        // Create a directional light
+        var light = new BABYLON.DirectionalLight("dir01", new BABYLON.Vector3(-1, -2, -1), scene);
+        light.position = new BABYLON.Vector3(20, 40, 20);
 
         // create a built-in "sphere" shape; its constructor takes 6 params: name, segment, diameter, scene, updatable, sideOrientation
         var sphere = BABYLON.Mesh.CreateSphere('sphere1', 16, 2, scene);
@@ -31,6 +32,11 @@ window.addEventListener('DOMContentLoaded', function(){
 
         // create a built-in "ground" shape; its constructor takes 6 params : name, width, height, subdivision, scene, updatable
         var ground = BABYLON.Mesh.CreateGround('ground1', 6, 6, 2, scene);
+        ground.receiveShadows = true;
+
+        // Shadows
+        var shadowGenerator = new BABYLON.ShadowGenerator(1024, light);
+        shadowGenerator.getShadowMap().renderList.push(sphere);
 
         // Keyboard events
         var inputMap = {};
