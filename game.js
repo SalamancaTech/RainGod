@@ -46,6 +46,31 @@ window.addEventListener('DOMContentLoaded', function(){
             inputMap[evt.sourceEvent.key] = evt.sourceEvent.type == "keydown";
         }));
 
+        // Rain particle system
+        var rain = new BABYLON.ParticleSystem("particles", 2000, scene);
+        rain.particleTexture = new BABYLON.Texture("https://www.babylonjs.com/assets/Flare.png", scene);
+        rain.emitter = new BABYLON.Vector3(0, 30, 0);
+        rain.minEmitBox = new BABYLON.Vector3(-10, 0, -10);
+        rain.maxEmitBox = new BABYLON.Vector3(10, 0, 10);
+        rain.color1 = new BABYLON.Color4(0.7, 0.8, 1.0, 1.0);
+        rain.color2 = new BABYLON.Color4(0.2, 0.5, 1.0, 1.0);
+        rain.colorDead = new BABYLON.Color4(0, 0, 0.2, 0.0);
+        rain.minSize = 0.1;
+        rain.maxSize = 0.2;
+        rain.minLifeTime = 0.3;
+        rain.maxLifeTime = 1.5;
+        rain.emitRate = 1500;
+        rain.blendMode = BABYLON.ParticleSystem.BLENDMODE_ONEONE;
+        rain.gravity = new BABYLON.Vector3(0, -9.81, 0);
+        rain.direction1 = new BABYLON.Vector3(-7, -8, 3);
+        rain.direction2 = new BABYLON.Vector3(7, -8, -3);
+        rain.minAngularSpeed = 0;
+        rain.maxAngularSpeed = Math.PI;
+        rain.minEmitPower = 1;
+        rain.maxEmitPower = 3;
+        rain.updateSpeed = 0.005;
+        rain.start();
+
         // Game/Render loop
         scene.onBeforeRenderObservable.add(() => {
             var forward = camera.getDirection(BABYLON.Axis.Z);
