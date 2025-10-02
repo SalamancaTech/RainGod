@@ -11,14 +11,9 @@ window.addEventListener('DOMContentLoaded', function(){
         // create a basic BJS Scene object
         var scene = new BABYLON.Scene(engine);
 
-        // create a FreeCamera, and set its position to (x:0, y:5, z:-10)
-        var camera = new BABYLON.FreeCamera('camera1', new BABYLON.Vector3(0, 5, -10), scene);
-
-        // target the camera to scene origin
-        camera.setTarget(BABYLON.Vector3.Zero());
-
-        // attach the camera to the canvas
-        camera.attachControl(canvas, false);
+        // Creates a default arc rotate camera and attaches it to the canvas
+        var camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 4, 10, new BABYLON.Vector3(0, 0, 0), scene);
+        camera.attachControl(canvas, true);
 
         // Create a directional light
         var light = new BABYLON.DirectionalLight("dir01", new BABYLON.Vector3(-1, -2, -1), scene);
@@ -29,6 +24,9 @@ window.addEventListener('DOMContentLoaded', function(){
 
         // move the sphere upward 1/2 of its height
         sphere.position.y = 1;
+
+        // Lock the camera's target to the sphere
+        camera.lockedTarget = sphere;
 
         // create a built-in "ground" shape; its constructor takes 6 params : name, width, height, subdivision, scene, updatable
         var ground = BABYLON.Mesh.CreateGround('ground1', 6, 6, 2, scene);
