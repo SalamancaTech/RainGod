@@ -13,17 +13,11 @@ window.addEventListener('DOMContentLoaded', function(){
         // create a basic BJS Scene object
         var scene = new BABYLON.Scene(engine);
 
-        // Creates a FreeCamera, and positions it
-        var camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 1.7, -5), scene);
+        // Creates a UniversalCamera, and positions it
+        var camera = new BABYLON.UniversalCamera("camera1", new BABYLON.Vector3(0, 1.7, -5), scene);
 
         // Attaches the camera to the canvas
         camera.attachControl(canvas, true);
-
-        // Add WASD controls
-        camera.keysUp.push(87); // W
-        camera.keysDown.push(83); // S
-        camera.keysLeft.push(65); // A
-        camera.keysRight.push(68); // D
 
         // Set camera speed
         camera.speed = 0.2;
