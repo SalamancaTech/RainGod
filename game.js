@@ -37,10 +37,6 @@ window.addEventListener('DOMContentLoaded', function(){
             ground.material = groundMaterial;
             ground.receiveShadows = true;
             originalGroundPositions = ground.getVerticesData(BABYLON.VertexBuffer.PositionKind);
-
-            // Position the sphere to be 2/3 submerged in the snow
-            var groundHeight = ground.getHeightAtCoordinates(sphere.position.x, sphere.position.z);
-            sphere.position.y = groundHeight - (1/3);
         });
 
         // Shadows
@@ -176,6 +172,9 @@ window.addEventListener('DOMContentLoaded', function(){
         rain.updateSpeed = 0.005;
         rain.start();
 
+        var velocityY = 0;
+        var gravity = -0.01;
+
         // Game/Render loop
         scene.onBeforeRenderObservable.add(() => {
             if (gamePaused) {
@@ -203,6 +202,20 @@ window.addEventListener('DOMContentLoaded', function(){
                 moveDirection.normalize();
                 var speed = 0.05; // Player moves slower in the snow
                 sphere.position.addInPlace(moveDirection.scale(speed));
+            }
+
+            // Gravity and ground collision
+            if (ground && ground.isReady()) {
+                var groundHeight = ground.getHeightAtCoordinates(sphere.position.x, sphere.position.z);
+                var targetY = groundHeight - (1/3); // Target Y for 2/3 submerged
+
+                velocityY += gravity;
+                sphere.position.y += velocityY;
+
+                if (sphere.position.y < targetY) {
+                    sphere.position.y = targetY;
+                    velocityY = 0;
+                }
             }
 
             if (ground && ground.isReady() && originalGroundPositions) {
@@ -235,11 +248,11 @@ window.addEventListener('DOMContentLoaded', function(){
                             positions[vertexIndex + 1] = Math.min(vY, sphereYatPoint);
                         }
 
-                        var pileupRadius = sphereRadius + 1.0;
+                        var pileupRadius = sphereRadius + 2.0; // Wider pile
                         if (distance > sphereRadius && distance < pileupRadius) {
                             var originalY = originalGroundPositions[vertexIndex + 1];
                             var pileupFactor = (pileupRadius - distance) / (pileupRadius - sphereRadius);
-                            var pileupAmount = 0.5 * pileupFactor;
+                            var pileupAmount = 0.2 * pileupFactor; // Lower pile
                             positions[vertexIndex + 1] = Math.max(vY, originalY + pileupAmount);
                         }
                     }
