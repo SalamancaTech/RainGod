@@ -19,6 +19,12 @@ window.addEventListener('DOMContentLoaded', function(){
         // Attaches the camera to the canvas
         camera.attachControl(canvas, true);
 
+        // Add WASD controls
+        camera.keysUp.push(87); // W
+        camera.keysDown.push(83); // S
+        camera.keysLeft.push(65); // A
+        camera.keysRight.push(68); // D
+
         // Set camera speed
         camera.speed = 0.2;
 
