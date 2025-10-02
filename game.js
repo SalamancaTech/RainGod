@@ -6,6 +6,8 @@ window.addEventListener('DOMContentLoaded', function(){
     // load the 3D engine
     var engine = new BABYLON.Engine(canvas, true);
 
+    var gamePaused = false;
+
     // createScene function that creates and return the scene
     var createScene = function(){
         // create a basic BJS Scene object
@@ -46,6 +48,100 @@ window.addEventListener('DOMContentLoaded', function(){
             inputMap[evt.sourceEvent.key] = evt.sourceEvent.type == "keydown";
         }));
 
+        var advancedTexture;
+        var pauseMenu, weatherMenu;
+
+        function createPauseMenu() {
+            advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
+
+            pauseMenu = new BABYLON.GUI.StackPanel();
+            pauseMenu.width = "200px";
+            pauseMenu.isVertical = true;
+            pauseMenu.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
+            pauseMenu.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
+            advancedTexture.addControl(pauseMenu);
+
+            var resumeButton = BABYLON.GUI.Button.CreateSimpleButton("resume", "Resume");
+            resumeButton.width = "100%";
+            resumeButton.height = "40px";
+            resumeButton.color = "white";
+            resumeButton.background = "green";
+            resumeButton.onPointerUpObservable.add(function () {
+                gamePaused = false;
+                pauseMenu.isVisible = false;
+            });
+            pauseMenu.addControl(resumeButton);
+
+            var weatherButton = BABYLON.GUI.Button.CreateSimpleButton("weather", "Weather Effects");
+            weatherButton.width = "100%";
+            weatherButton.height = "40px";
+            weatherButton.color = "white";
+            weatherButton.background = "green";
+            weatherButton.onPointerUpObservable.add(function () {
+                pauseMenu.isVisible = false;
+                weatherMenu.isVisible = true;
+            });
+            pauseMenu.addControl(weatherButton);
+
+            pauseMenu.isVisible = false;
+        }
+
+        function createWeatherMenu() {
+            weatherMenu = new BABYLON.GUI.StackPanel();
+            weatherMenu.width = "200px";
+            weatherMenu.isVertical = true;
+            weatherMenu.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
+            weatherMenu.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
+            advancedTexture.addControl(weatherMenu);
+
+            var rainButton = BABYLON.GUI.Button.CreateSimpleButton("rain", "Toggle Rain");
+            rainButton.width = "100%";
+            rainButton.height = "40px";
+            rainButton.color = "white";
+            rainButton.background = "green";
+            rainButton.onPointerUpObservable.add(function () {
+                if (rain.isStarted()) {
+                    rain.stop();
+                } else {
+                    rain.start();
+                }
+            });
+            weatherMenu.addControl(rainButton);
+
+            var backButton = BABYLON.GUI.Button.CreateSimpleButton("back", "Back");
+            backButton.width = "100%";
+            backButton.height = "40px";
+            backButton.color = "white";
+            backButton.background = "green";
+            backButton.onPointerUpObservable.add(function () {
+                weatherMenu.isVisible = false;
+                pauseMenu.isVisible = true;
+            });
+            weatherMenu.addControl(backButton);
+
+            weatherMenu.isVisible = false;
+        }
+
+        window.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") {
+                gamePaused = !gamePaused;
+                if (gamePaused) {
+                    if (!advancedTexture) {
+                        createPauseMenu();
+                        createWeatherMenu();
+                    }
+                    pauseMenu.isVisible = true;
+                } else {
+                    if (pauseMenu) {
+                        pauseMenu.isVisible = false;
+                    }
+                    if (weatherMenu) {
+                        weatherMenu.isVisible = false;
+                    }
+                }
+            }
+        });
+
         // Rain particle system
         var rain = new BABYLON.ParticleSystem("particles", 2000, scene);
         rain.particleTexture = new BABYLON.Texture("https://www.babylonjs.com/assets/Flare.png", scene);
@@ -73,6 +169,9 @@ window.addEventListener('DOMContentLoaded', function(){
 
         // Game/Render loop
         scene.onBeforeRenderObservable.add(() => {
+            if (gamePaused) {
+                return;
+            }
             var forward = camera.getDirection(BABYLON.Axis.Z);
             var right = camera.getDirection(BABYLON.Axis.X);
             var moveDirection = new BABYLON.Vector3(0, 0, 0);
